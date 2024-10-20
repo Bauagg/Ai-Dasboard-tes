@@ -2,12 +2,15 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaSmile, FaMeh, FaFrown } from "react-icons/fa"; // Importing icons
 import Navbar from "./Navbar";
+import { MapContainer } from 'https://cdn.esm.sh/react-leaflet/MapContainer'
 
 const Data = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [resultsPerPage] = useState(10); // 10 items per page
   const [filter, setFilter] = useState("This week"); // Default filter
+
+
 
   useEffect(() => {
     fetchResults();

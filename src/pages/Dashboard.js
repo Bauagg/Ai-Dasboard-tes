@@ -7,6 +7,9 @@ import Navbar from "./Navbar";
 import { Link } from "react-router-dom";
 import Menu from "../assets/menu.png";
 import axios from "axios";
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import geoJsonData from "../geoJson/custom.geo.json";
 
 // Register the required components with ChartJS
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -15,9 +18,9 @@ const Dashboard = () => {
   const [selectedTopic, setSelectedTopic] = useState("CROWN PRINCE");
   const [dataSentimen, setdataSentimen] = useState([]);
   const [mediaMentionsData, setMediaMentionsData] = useState(null);
-  const geoUrl = "https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json";
-
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Untuk mengelola state dari hamburger menu
+  const [dataCountry, setDataCountry] = useState([])
+  const [trustworthyData, setTrustworthyData] = useState(null);
 
   const handleHamburgerClick = () => {
     setIsMenuOpen(!isMenuOpen); // Toggle menu
@@ -123,6 +126,49 @@ Sentiment: ${sentimentInfo.sentiment.toFixed(2)}`;
     },
   };
 
+  useEffect(() => {
+    axios.get('https://ai.oigetit.com/AI71/Country?json=%7B')
+      .then((result) => {
+        // Extract data for trustworthy chart
+        const countries = result.data;
+        const labels = countries.map(country => country.country);
+        const data = countries.map(country => country.sentiment); // Use sentiment for the score
+
+        setTrustworthyData({
+          labels,
+          datasets: [
+            {
+              label: "Trustworthy %", // Name of the dataset
+              data: data, // Use sentiment data
+              borderColor: "#0FA7E6",
+              fill: false,
+            },
+          ],
+        });
+
+        setDataCountry(countries)
+      })
+      .catch((err) => console.log(err))
+  }, [])
+
+  const getColorBySentiment = (sentiment) => {
+    if (sentiment >= 1) return 'green';  // Sentiment positif
+    if (sentiment < 0) return 'red';    // Sentiment negatif
+    return 'yellow';                    // Sentiment netral
+  };
+
+  // Komponen untuk mewarnai GeoJSON
+  const style = (feature) => {
+    const countryData = dataCountry.find(item => item.country === feature.properties.iso_a2);
+    const color = countryData ? getColorBySentiment(countryData.sentiment) : 'gray'; // Warna default untuk negara lainnya
+    return {
+      fillColor: color,
+      weight: 1,
+      color: 'white',
+      fillOpacity: 1,
+    };
+  };
+
   return (
     <>
       <div>
@@ -193,26 +239,24 @@ Sentiment: ${sentimentInfo.sentiment.toFixed(2)}`;
         <div className="grid grid-cols-2 gap-6">
           <div className="bg-white shadow-md p-4 rounded-lg">
             <h2 className="text-xl font-semibold">Trustworthy News Score</h2>
-            <Line
-              data={{
-                labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                datasets: [
-                  {
-                    label: "Trustworthy %",
-                    data: [80, 70, 85, 90, 75, 60, 85],
-                    borderColor: "#0FA7E6",
-                    fill: false,
-                  },
-                ],
-              }}
-            />
+            {trustworthyData && ( // Check if trustworthyData is available before rendering
+              <Line data={trustworthyData} />
+            )}
           </div>
 
           <div className="bg-white shadow-md p-4 rounded-lg">
             <h2 className="text-xl font-semibold">Reputation Map</h2>
-            <ComposableMap>
-              <Geographies geography={geoUrl}>{({ geographies }) => geographies.map((geo) => <Geography key={geo.rsmKey} geography={geo} fill="#DDD" stroke="#FFF" />)}</Geographies>
-            </ComposableMap>
+            <div className="bg-white p-4  mt-5">
+              <MapContainer center={[20, 0]} zoom={2} style={{ height: '50vh', width: '100%' }}>
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                {geoJsonData && (
+                  <GeoJSON data={geoJsonData} style={style} />
+                )}
+              </MapContainer>
+            </div>
           </div>
         </div>
       </div>
