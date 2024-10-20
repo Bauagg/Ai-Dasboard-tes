@@ -4,27 +4,23 @@ import { Line, Bar } from "react-chartjs-2";
 import { BarElement } from "chart.js";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import Navbar from "./Navbar";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Menu from "../assets/menu.png";
+import axios from "axios";
 
 // Register the required components with ChartJS
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
   const [selectedTopic, setSelectedTopic] = useState("CROWN PRINCE");
-  const [dataSentimen, setdataSentimen] = useState([])
+  const [dataSentimen, setdataSentimen] = useState([]);
   const [mediaMentionsData, setMediaMentionsData] = useState(null);
   const geoUrl = "https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json";
 
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Untuk mengelola state dari hamburger menu
-  const navigate = useNavigate(); // Untuk navigasi ke halaman "/data"
 
   const handleHamburgerClick = () => {
     setIsMenuOpen(!isMenuOpen); // Toggle menu
-  };
-
-  const handleMenuClick = () => {
-    navigate("/data"); // Navigasi ke halaman "/data"
   };
 
   // Handle topic change
@@ -33,10 +29,11 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    axios.get('https://ai.oigetit.com/AI71/Histogram?json={"TanggalMulai":"%2001-09-2024","TanggalAkhir":"01-10-2024%20","Permintaan":"UEA"}')
+    axios
+      .get('https://ai.oigetit.com/AI71/Histogram?json={"TanggalMulai":"%2001-09-2024","TanggalAkhir":"01-10-2024%20","Permintaan":"UEA"}')
       .then((result) => {
-        console.log(result.data)
-        setdataSentimen(result.data)
+        console.log(result.data);
+        setdataSentimen(result.data);
         // Extract data for labels and datasets from API response
         const labels = result.data.map((item) => item.pubdate);
         const volumeData = result.data.map((item) => item.volume);
@@ -46,27 +43,27 @@ const Dashboard = () => {
           labels,
           datasets: [
             {
-              label: 'Mentions',
+              label: "Mentions",
               data: volumeData,
-              backgroundColor: '#4473FFCC',
-              borderColor: '#4473FFCC',
+              backgroundColor: "#4473FFCC",
+              borderColor: "#4473FFCC",
               borderWidth: 1,
             },
           ],
         });
       })
-      .catch((err) => console.log(err))
-  }, [])
+      .catch((err) => console.log(err));
+  }, []);
 
   // Convert dataSentimen to a format Chart.js can use
-  const chartLabels = dataSentimen.map(item => item.pubdate);  // Extract pubdates
-  const chartDataPositive = dataSentimen.map(item => item.volume_pos);  // Extract positive volumes
-  const chartDataNeutral = dataSentimen.map(item => item.volume_neu);  // Extract neutral volumes
-  const chartDataNegative = dataSentimen.map(item => item.volume_neg);  // Extract negative volumes
+  const chartLabels = dataSentimen.map((item) => item.pubdate); // Extract pubdates
+  const chartDataPositive = dataSentimen.map((item) => item.volume_pos); // Extract positive volumes
+  const chartDataNeutral = dataSentimen.map((item) => item.volume_neu); // Extract neutral volumes
+  const chartDataNegative = dataSentimen.map((item) => item.volume_neg); // Extract negative volumes
 
   // Data for the Sentiment in Real-Time chart
   const data = {
-    labels: chartLabels,  // Dynamic labels
+    labels: chartLabels, // Dynamic labels
     datasets: [
       {
         label: "Positive",
@@ -95,14 +92,14 @@ const Dashboard = () => {
       x: {
         title: {
           display: true,
-          text: 'Date', // Label for x-axis
+          text: "Date", // Label for x-axis
         },
       },
       y: {
         beginAtZero: true,
         title: {
           display: true,
-          text: 'Volume', // Label for y-axis
+          text: "Volume", // Label for y-axis
         },
       },
     },
@@ -143,9 +140,13 @@ Sentiment: ${sentimentInfo.sentiment.toFixed(2)}`;
             {/* Menu yang muncul saat hamburger diklik */}
             {isMenuOpen && (
               <div className="absolute top-10 left-0 w-full bg-white shadow-md">
-                <button className="block w-full text-left py-2 px-4 text-black hover:bg-gray-200" onClick={handleMenuClick}>
-                  Data
-                </button>
+                <Link to="/data">
+                  <button className="block w-full text-left py-2 px-4 text-black hover:bg-gray-200">Data</button>
+                </Link>
+
+                <Link to="/artikel">
+                  <button className="block w-full text-left py-2 px-4 text-black hover:bg-gray-200">Artikel</button>
+                </Link>
               </div>
             )}
           </div>
@@ -181,15 +182,10 @@ Sentiment: ${sentimentInfo.sentiment.toFixed(2)}`;
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-8 w-full">
+        <div className=" mb-8 w-full">
           <div className="bg-white shadow-md p-4 rounded-lg">
             <h2 className="text-xl font-semibold">Media Mentions</h2>
-            {mediaMentionsData ? (
-              <Bar data={mediaMentionsData} options={mediaMentionsOptions} />
-            ) : (
-              <p>Loading</p>
-            )
-            }
+            {mediaMentionsData ? <Bar data={mediaMentionsData} options={mediaMentionsOptions} /> : <p>Loading</p>}
           </div>
         </div>
 
