@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 import { Line, Bar } from "react-chartjs-2";
 import { BarElement } from "chart.js";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import Navbar from "./Navbar";
+import axios from "axios";
 
 // Register the required components with ChartJS
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
   const [selectedTopic, setSelectedTopic] = useState("CROWN PRINCE");
+  const [dataSentimen, setdataSentimen] = useState([])
+  const [mediaMentionsData, setMediaMentionsData] = useState(null);
   const geoUrl = "https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json";
 
   // Handle topic change
@@ -17,78 +20,94 @@ const Dashboard = () => {
     setSelectedTopic(topic);
   };
 
-  // Data for the charts
+  useEffect(() => {
+    axios.get('https://ai.oigetit.com/AI71/Histogram?json={"TanggalMulai":"%2001-09-2024","TanggalAkhir":"01-10-2024%20","Permintaan":"UEA"}')
+      .then((result) => {
+        console.log(result.data)
+        setdataSentimen(result.data)
+        // Extract data for labels and datasets from API response
+        const labels = result.data.map((item) => item.pubdate);
+        const volumeData = result.data.map((item) => item.volume);
+
+        // Set the media mentions data
+        setMediaMentionsData({
+          labels,
+          datasets: [
+            {
+              label: 'Mentions',
+              data: volumeData,
+              backgroundColor: '#4473FFCC',
+              borderColor: '#4473FFCC',
+              borderWidth: 1,
+            },
+          ],
+        });
+      })
+      .catch((err) => console.log(err))
+  }, [])
+
+  // Convert dataSentimen to a format Chart.js can use
+  const chartLabels = dataSentimen.map(item => item.pubdate);  // Extract pubdates
+  const chartDataPositive = dataSentimen.map(item => item.volume_pos);  // Extract positive volumes
+  const chartDataNeutral = dataSentimen.map(item => item.volume_neu);  // Extract neutral volumes
+  const chartDataNegative = dataSentimen.map(item => item.volume_neg);  // Extract negative volumes
+
+  // Data for the Sentiment in Real-Time chart
   const data = {
-    labels: ["April", "May", "June", "July", "August", "September"],
+    labels: chartLabels,  // Dynamic labels
     datasets: [
       {
         label: "Positive",
-        data: [60, 50, 55, 70, 85, 90],
+        data: chartDataPositive,
         borderColor: "green",
         fill: false,
       },
       {
         label: "Neutral",
-        data: [30, 25, 40, 50, 60, 70],
+        data: chartDataNeutral,
         borderColor: "orange",
         fill: false,
       },
       {
         label: "Negative",
-        data: [10, 15, 20, 15, 10, 5],
+        data: chartDataNegative,
         borderColor: "red",
         fill: false,
       },
     ],
   };
 
-  // Data untuk Media Mentions
-  const mediaMentionsData = {
-    labels: ["8/21", "8/31", "9/10", "9/20"], // Label untuk x-axis (Weeks)
-    datasets: [
-      {
-        label: "Mentions",
-        data: [50, 80, 100, 90], // Data volume untuk tiap bar
-        backgroundColor: "#4473FFCC",
-        borderColor: "#4473FFCC",
-        borderWidth: 1,
-      },
-    ],
-  };
-
+  // Chart options with dynamic tooltip
   const mediaMentionsOptions = {
     scales: {
       x: {
         title: {
           display: true,
-          text: "Weeks", // Label untuk x-axis
+          text: 'Date', // Label for x-axis
         },
       },
       y: {
         beginAtZero: true,
         title: {
           display: true,
-          text: "Volume", // Label untuk y-axis
+          text: 'Volume', // Label for y-axis
         },
       },
     },
     plugins: {
       tooltip: {
         callbacks: {
-          // Fungsi untuk menampilkan detail tooltip
           label: function (tooltipItem) {
             const index = tooltipItem.dataIndex;
-            const volume = tooltipItem.raw;
-            // Data sentiment untuk tiap bar (disimulasikan)
-            const sentimentData = [
-              { positive: 30, negative: 10, neutral: 10, sentiment: "Negative" },
-              { positive: 60, negative: 10, neutral: 10, sentiment: "Positive" },
-              { positive: 75, negative: 15, neutral: 10, sentiment: "Positive" },
-              { positive: 55, negative: 20, neutral: 15, sentiment: "Positive" },
-            ];
-            const data = sentimentData[index];
-            // Mengembalikan data yang akan muncul di tooltip
-            return `Volume: ${volume}\nPositive: ${data.positive}\nNegative: ${data.negative}\nNeutral: ${data.neutral}\nSentiment: ${data.sentiment}`;
+            const data = mediaMentionsData.datasets[0].data[index];
+            const sentimentInfo = dataSentimen[index]; // Get sentiment data
+
+            // Format tooltip with sentiment details
+            return `Volume: ${data}
+Positive: ${sentimentInfo.volume_pos}
+Negative: ${sentimentInfo.volume_neg}
+Neutral: ${sentimentInfo.volume_neu}
+Sentiment: ${sentimentInfo.sentiment.toFixed(2)}`;
           },
         },
       },
@@ -138,7 +157,12 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 gap-6 mb-8 w-full">
           <div className="bg-white shadow-md p-4 rounded-lg">
             <h2 className="text-xl font-semibold">Media Mentions</h2>
-            <Bar data={mediaMentionsData} options={mediaMentionsOptions} /> {/* Ganti Line dengan Bar */}
+            {mediaMentionsData ? (
+              <Bar data={mediaMentionsData} options={mediaMentionsOptions} />
+            ) : (
+              <p>Loading</p>
+            )
+            }
           </div>
         </div>
 
