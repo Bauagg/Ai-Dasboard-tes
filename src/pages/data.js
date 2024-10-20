@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { FaSmile, FaMeh, FaFrown } from "react-icons/fa"; // Importing icons
 import Navbar from "./Navbar";
 
 const Data = () => {
@@ -7,27 +9,57 @@ const Data = () => {
   const [resultsPerPage] = useState(10); // 10 items per page
   const [filter, setFilter] = useState("This week"); // Default filter
 
-  // Fungsi untuk mengambil data hasil pencarian
   useEffect(() => {
     fetchResults();
   }, [filter, currentPage]);
 
-  const fetchResults = async () => {
-    // Contoh pengambilan data dari API, bisa diubah sesuai kebutuhan
-    const response = await fetch(`API_URL?page=${currentPage}&filter=${filter}`);
-    const data = await response.json();
-    setSearchResults(data.results); // Asumsikan response berupa data.results
+  const fetchResults = () => {
+    axios
+      .get(`https://ai.oigetit.com/AI71/Articles?json=%7B`)
+      .then((response) => {
+        const data = response.data.result; // Sesuaikan dengan struktur respons dari API
+        console.log(data);
+
+        setSearchResults(data || []); // Mengambil properti result dari respons
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
   };
 
-  // Fungsi untuk mengubah halaman
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
-  // Fungsi untuk mengubah filter tanggal
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
     setCurrentPage(1); // Reset ke halaman 1 saat filter berubah
+  };
+
+  // Function to render sentiment icons
+  const renderSentimentIcons = (sentimentValue) => {
+    if (sentimentValue >= 3) {
+      return (
+        <>
+          <FaSmile className="text-green-500" />
+          <FaSmile className="text-green-500" />
+          <FaSmile className="text-green-500" />
+        </>
+      );
+    } else if (sentimentValue === 2) {
+      return (
+        <>
+          <FaSmile className="text-green-500" />
+          <FaSmile className="text-green-500" />
+        </>
+      );
+    } else if (sentimentValue === 1) {
+      return <FaSmile className="text-green-500" />;
+    } else if (sentimentValue === 0) {
+      return <FaMeh className="text-yellow-500" />;
+    } else if (sentimentValue <= -1) {
+      return <FaFrown className="text-red-500" />;
+    }
   };
 
   return (
@@ -68,17 +100,13 @@ const Data = () => {
                 <th className="border px-4 py-2 text-left">Date</th>
               </tr>
             </thead>
-            <tbody>
-              {searchResults.map((result, index) => (
+            <tbody className="border">
+              {searchResults.slice((currentPage - 1) * resultsPerPage, currentPage * resultsPerPage).map((result, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="border px-4 py-2">{result.sentiment}</td>
-                  <td className="border px-4 py-2">
-                    <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                      {result.article}
-                    </a>
-                  </td>
-                  <td className="border px-4 py-2">{result.source}</td>
-                  <td className="border px-4 py-2">{result.date}</td>
+                  <td className="border-b ps-4 py-3 flex gap-2 h-full">{renderSentimentIcons(result.happiness)}</td>
+                  <td className="border px-4 py-2">{result.title || "No description available"}</td>
+                  <td className="border px-4 py-2">{result.feed}</td>
+                  <td className="border px-4 py-2">{result.pubdate}</td>
                 </tr>
               ))}
             </tbody>
