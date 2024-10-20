@@ -4,6 +4,8 @@ import { Line, Bar } from "react-chartjs-2";
 import { BarElement } from "chart.js";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import Navbar from "./Navbar";
+import { useNavigate } from "react-router-dom";
+import Menu from "../assets/menu.png";
 
 // Register the required components with ChartJS
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -11,6 +13,17 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 const Dashboard = () => {
   const [selectedTopic, setSelectedTopic] = useState("CROWN PRINCE");
   const geoUrl = "https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json";
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Untuk mengelola state dari hamburger menu
+  const navigate = useNavigate(); // Untuk navigasi ke halaman "/data"
+
+  const handleHamburgerClick = () => {
+    setIsMenuOpen(!isMenuOpen); // Toggle menu
+  };
+
+  const handleMenuClick = () => {
+    navigate("/data"); // Navigasi ke halaman "/data"
+  };
 
   // Handle topic change
   const handleTopicChange = (topic) => {
@@ -102,7 +115,22 @@ const Dashboard = () => {
       </div>
       <div className="p-8 bg-gray-100">
         {/* Dashboard Header */}
-        <div className="flex items-center justify-center mb-4">
+        <div className="flex items-center  mb-4 gap-72 ">
+          {/* Hamburger Menu */}
+          <div className="">
+            <button className="text-black focus:outline-none" onClick={handleHamburgerClick}>
+              {/* Hamburger icon */}
+              <img src={Menu} alt=""></img>
+            </button>
+            {/* Menu yang muncul saat hamburger diklik */}
+            {isMenuOpen && (
+              <div className="absolute top-10 left-0 w-full bg-white shadow-md">
+                <button className="block w-full text-left py-2 px-4 text-black hover:bg-gray-200" onClick={handleMenuClick}>
+                  Data
+                </button>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-4 ">
             <span className="text-lg">Topics:</span>
             <button className={`py-1 px-3 rounded-lg  ${selectedTopic === "CROWN PRINCE" ? "bg-[#0FA7E6] text-white" : "text-black"}`} onClick={() => handleTopicChange("CROWN PRINCE")}>
